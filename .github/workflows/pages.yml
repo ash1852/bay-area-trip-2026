@@ -28,6 +28,15 @@ jobs:
           mkdir -p _site
           cp index.html app.js styles.css _site/
           cp -r data vendor _site/
+      - name: Version updated browser assets
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const v=process.env.GITHUB_SHA;
+          const html=readFileSync('_site/index.html','utf8').replace('href="styles.css"',`href="styles.css?v=${v}"`).replace('src="app.js"',`src="app.js?v=${v}"`);
+          const app=readFileSync('_site/app.js','utf8').replaceAll("./data/itinerary.js",`./data/itinerary.js?v=${v}`).replaceAll("./data/hierarchy.js",`./data/hierarchy.js?v=${v}`);
+          writeFileSync('_site/index.html',html);writeFileSync('_site/app.js',app);
+          JS
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
