@@ -1,0 +1,1 @@
+{"name":"bay-area-trip-2026","private":true,"type":"module","scripts":{"check":"node scripts/validate.mjs"}}
