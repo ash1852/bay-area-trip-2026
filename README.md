@@ -2,7 +2,9 @@
 
 2026 年 10 月 2–10 日的轻量行程地图。没有框架、后端、数据库、API 密钥或运行时 npm 依赖。
 
-项目仓库：https://github.com/ash1852/bay-area-trip-2026 。首次启用 Pages 后，在线地址以部署记录为准。
+在线地图：https://ash1852.github.io/bay-area-trip-2026/ 。
+
+项目仓库：https://github.com/ash1852/bay-area-trip-2026 。
 
 ## 使用
 
