@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { buildHierarchy, duration } from '../data/hierarchy.js';
 import { days, places, trip } from '../data/itinerary.js';
 const minute = value => {
   assert.match(value,/^(?:[01]\d|2[0-3]):[0-5]\d$/);
@@ -27,3 +28,24 @@ assert.equal(days.length,9);
 assert.ok(days.find(d=>d.id==='2026-10-05').events.some(e=>e.start==='19:00'&&e.title==='自由时间'));
 assert.ok(days.find(d=>d.id==='2026-10-10').events.some(e=>e.from==='oak'&&e.start==='18:50'));
 console.log(`通过：${Object.keys(places).length} 个地点、${days.length} 天、${seen.size} 个节点；时间无重叠，引用与预算有效。`);
+
+// 层级模型保证原事件无遗漏，父子引用正确，未知时间不伪造。
+for(const day of days){
+ const m=buildHierarchy(day,places);
+ assert.deepEqual(m.parents.flatMap(p=>p.sourceIds),day.events.map(e=>e.id));
+ for(const p of m.parents){
+  assert.ok(p.children.length);
+  for(const c of p.children){assert.equal(c.parentId,p.id);assert.equal(c.kind,p.kind==='place'?'activity':'transport');assert.equal(m.nodes.get(c.id),c);}
+ }
+ for(const e of day.events)assert.ok(m.nodes.has(m.aliases.get(e.id)));
+}
+const island=buildHierarchy(days[2],places).parents.find(p=>p.at==='alcatraz');
+assert.ok(island.children.length>=5);assert.equal(island.start,'10:50');assert.equal(island.end,'14:40');
+assert.equal(duration(island),'3 小时 50 分钟');
+const birthday=buildHierarchy(days[3],places);
+assert.equal(birthday.parents.filter(p=>p.at==='hotel').length,2);
+const transit=buildHierarchy(days[2],places).parents.find(p=>p.from==='hotel');
+assert.equal(transit.children.length,3);assert.equal(duration(transit),'1 小时 15 分钟');
+assert.ok(transit.children.every(c=>c.start===null && c.end===null));
+assert.equal(duration({start:null,end:null}),'时长待确认');
+console.log('通过：两层模型、连续停留、跨湾分段、未知时间与旧链接映射。');
