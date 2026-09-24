@@ -1,105 +1,67 @@
 import { days, places, trip } from './data/itinerary.js';
-import { buildHierarchy, nodeTypes, duration } from './data/hierarchy.js';
-
+import { buildRoute, duration } from './data/route-model.js';
 const $=id=>document.getElementById(id);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const modes={walk:'步行',transit:'公共交通',train:'轨道交通',ferry:'轮渡',shuttle:'接驳车',ride:'打车',flight:'飞机'};
-let day=days[0],mode='route',selected,model,map,routeLayer,markerLayer;
-const expanded=new Set();
+const modes={walk:'步行',transit:'公交 / 换乘',train:'轨道交通',ferry:'轮渡',shuttle:'接驳车',ride:'打车',flight:'飞机',cable:'缆车'};
+const colors={visit:'#237b65',transfer:'#406cc3'};
+const transportName=e=>e.mode==='train'?(e.title.includes('BART')?'BART':'Amtrak 火车'):modes[e.mode];
 const point=id=>[places[id].lat,places[id].lng];
+const time=e=>`${e.start||'待确认'}–${e.end||'待确认'}`;
 const sum=budget=>budget?Object.values(budget).reduce((a,b)=>a+b,0):null;
-const time=e=>e.start?`${e.start}–${e.end}`:'时间待确认';
-const color=e=>nodeTypes[e.kind].color;
-const shortName=id=>places[id].name.split(' · ').at(-1);
-const mapTitle=e=>e.kind==='place'?shortName(e.at):e.kind==='transfer'?`${shortName(e.from)} → ${shortName(e.to)}`:e.title;
-const visible=()=>model.parents.flatMap(p=>expanded.has(p.id)?[p,...p.children]:[p]);
-const route=e=>e.children?e.children.flatMap(route):e.from?[e.from,...(e.via||[]),e.to].map(point):[point(e.at)];
-const nodePoint=e=>e.kind==='place'?point(e.at):e.from?route(e)[Math.floor((route(e).length-1)/2)].map((v,i)=>(v+route(e)[Math.ceil((route(e).length-1)/2)][i])/2):point(e.at);
-function writeHash(){history.replaceState(null,'',`#${new URLSearchParams({day:day.id,mode,event:selected.id,open:[...expanded].join(',')})}`);}
-function readHash(){
-  const p=new URLSearchParams(window.location.hash.slice(1));day=days.find(d=>d.id===p.get('day'))||days[0];mode=p.get('mode')==='time'?'time':'route';model=buildHierarchy(day,places);expanded.clear();
-  (p.get('open')||'').split(',').forEach(id=>{if(model.nodes.get(id)?.children)expanded.add(id);});
-  selected=model.nodes.get(p.get('event'))||model.nodes.get(model.aliases.get(p.get('event')))||model.parents[0];
-  if(selected.parentId)expanded.add(selected.parentId);
-}
+let day=days[0],mode='route',selected,model,map,routeLayer,markerLayer,panel='overview';
+const mobile=()=>matchMedia('(max-width:760px)').matches;
+function writeHash(){history.replaceState(null,'',`#${new URLSearchParams({day:day.id,mode,event:selected.id})}`);}
+function readHash(){const p=new URLSearchParams(location.hash.slice(1));day=days.find(d=>d.id===p.get('day'))||days[0];mode=p.get('mode')==='time'?'time':'route';model=buildRoute(day,places);selected=model.byId.get(p.get('event'))||model.byId.get(model.aliases.get(p.get('event')))||model.visits[0];}
 function initMap(){
-  if(!window.L){showMapMessage('地图组件未加载，请刷新。完整行程仍可展开查看。');return;}
-  map=L.map('map',{zoomControl:false,scrollWheelZoom:true}).setView([37.81,-122.35],11);
-  L.control.zoom({position:'topright'}).addTo(map);L.control.scale({position:'bottomleft',imperial:false}).addTo(map);
-  let errors=0;const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
-  tiles.on('tileerror',()=>{if(++errors>=4)showMapMessage('底图暂时无法加载；路线与节点仍可点击，也可打开详情中的导航。');});
-  tiles.on('tileload',()=>{errors=0;$('map-message').hidden=true;});
-  routeLayer=L.layerGroup().addTo(map);markerLayer=L.layerGroup().addTo(map);
-  map.on('zoomend',()=>{if(selected)renderMap();});
+ if(!window.L){$('map-message').hidden=false;$('map-message').textContent='地图未加载，可点“今日计划”查看行程。';return;}
+ map=L.map('map',{zoomControl:false}).setView([37.81,-122.35],11);L.control.zoom({position:'topright'}).addTo(map);L.control.scale({position:'bottomleft',imperial:false}).addTo(map);
+ let errors=0;const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
+ tiles.on('tileerror',()=>{if(++errors>=4){$('map-message').hidden=false;$('map-message').textContent='底图暂时未加载，地点和事项仍可查看。';}});tiles.on('tileload',()=>{$('map-message').hidden=true;errors=0;});
+ routeLayer=L.layerGroup().addTo(map);markerLayer=L.layerGroup().addTo(map);
 }
-function showMapMessage(text){$('map-message').textContent=text;$('map-message').hidden=false;}
-function fitDay(){if(map)map.fitBounds(L.latLngBounds(day.events.flatMap(e=>[e.from,e.to,e.at,...(e.via||[])]).filter(Boolean).map(point)),{paddingTopLeft:[85,100],paddingBottomRight:[85,mode==='time'?210:130],maxZoom:14,animate:false});}
-function expandButton(p,compact=false){return `<button class="expand" data-toggle="${p.id}" aria-expanded="${expanded.has(p.id)}" aria-label="${expanded.has(p.id)?'收起':'展开'}${escape(p.title)}的${p.kind==='place'?'活动':'交通'}">${expanded.has(p.id)?'−':'+'}${compact?'':`<small>${p.children.length}</small>`}</button>`;}
+function fitDay(){if(map)map.fitBounds([...model.points.keys()].map(point),{paddingTopLeft:[32,80],paddingBottomRight:[32,90],maxZoom:15,animate:false});}
+function focusVisit(v){
+ if(!map)return;const zoom=Math.max(map.getZoom(),['alcatraz','alcatrazdock','alcatrazyard','alcatraz64'].includes(v.at)?17:15);
+ const shift=mobile()?map.getSize().y*.25:0;map.setView(map.unproject(map.project(point(v.at),zoom).add([0,shift]),zoom),zoom,{animate:false});
+}
 function renderMap(){
-  if(!map)return;routeLayer.clearLayers();markerLayer.clearLayers();
-  for(const p of model.parents){
-    if(p.kind!=='transfer')continue;
-    for(const id of [p.from,p.to]) L.circleMarker(point(id),{radius:3,color:color(p),weight:1,fillOpacity:1}).addTo(routeLayer).bindTooltip(escape(places[id].name));
-    const children=expanded.has(p.id)?p.children:[p];
-    for(const e of children){
-      L.polyline(route(e),{color:color(e),weight:selected.id===e.id?6:3,opacity:.8,dashArray:'6 8'}).addTo(routeLayer).on('click',()=>selectEvent(e.id,false)).bindTooltip(`${escape(time(e))} · ${escape(duration(e))}<br>${escape(e.title)}`,{sticky:true});
-    }
-  }
-  // 像素避让仅移动标签，连线仍指向实际坐标；同址不同停留不会相互覆盖。
-  const used=[],positions=new Map();
-  const branch=selected.parentId||selected.id;
-  const ordered=visible().sort((a,b)=>Number(b.id===branch||b.parentId===branch)-Number(a.id===branch||a.parentId===branch));
-  for(const e of ordered){
-    const origin=map.latLngToLayerPoint(nodePoint(e));let pos=origin;
-    const parentPos=positions.get(e.parentId);
-    const childIndex=e.parentId?model.nodes.get(e.parentId).children.findIndex(c=>c.id===e.id):0;
-    const base=parentPos?parentPos.add([childIndex%2===0?-70:70,55*(Math.floor(childIndex/2)+1)]):origin;
-    for(let ring=0;ring<30;ring++){
-      let found=false;
-      for(let k=0;k<(ring?8:1);k++){
-        const candidate=base.add([Math.cos(k*Math.PI/4)*ring*74,Math.sin(k*Math.PI/4)*ring*57]);
-        if(!used.some(q=>Math.abs(q.x-candidate.x)<138&&Math.abs(q.y-candidate.y)<53)){pos=candidate;found=true;break;}
-      }
-      if(found)break;
-    }
-    used.push(pos);positions.set(e.id,pos);
-    if(parentPos)L.polyline([map.layerPointToLatLng(parentPos),map.layerPointToLatLng(pos)],{color:color(e),weight:2,opacity:.65,interactive:false}).addTo(markerLayer);
-    if(pos.distanceTo(origin)>8)L.polyline([map.layerPointToLatLng(origin),map.layerPointToLatLng(pos)],{color:color(e),weight:1,opacity:.6,interactive:false,dashArray:'2 4'}).addTo(markerLayer);
-    const parent=e.children;const label=mode==='time'?(e.start||'待定'):(parent?`${e.kind==='place'?'地点':'中转'} ${e.number}`:nodeTypes[e.kind].label);
-    const html=`<div class="map-node node-${e.kind} ${selected.id===e.id?'is-selected':''}" style="--node:${color(e)}" data-node="${e.id}"><button class="node-select" data-event="${e.id}" aria-label="${escape(nodeTypes[e.kind].label+'：'+e.title)}" aria-pressed="${selected.id===e.id}"><b>${nodeTypes[e.kind].icon} ${escape(label)}</b><span>${escape(mapTitle(e))}</span></button>${parent?expandButton(e,true):''}</div>`;
-    const marker=L.marker(map.layerPointToLatLng(pos),{icon:L.divIcon({className:'hierarchy-pin',html,iconSize:[130,44],iconAnchor:[65,22]}),keyboard:false,zIndexOffset:selected.id===e.id?10000:parent?100:200}).addTo(markerLayer);
-    const element=marker.getElement();L.DomEvent.disableClickPropagation(element);L.DomEvent.disableScrollPropagation(element);
-    element.querySelector('[data-event]').addEventListener('click',()=>selectEvent(e.id,false));
-    element.querySelector('[data-toggle]')?.addEventListener('click',()=>toggleParent(e.id));
-    marker.bindTooltip(`${escape(nodeTypes[e.kind].label)} · ${escape(e.title)}<br>${escape(time(e))} · ${escape(duration(e))}`,{direction:'top',offset:[0,-20]});
-  }
+ if(!map)return;routeLayer.clearLayers();markerLayer.clearLayers();
+ for(const v of model.visits){if(!v.outgoing)continue;const leg=v.outgoing;
+  const line=L.polyline([point(leg.from),point(leg.to)],{color:v.id===selected.id?'#174f90':'#708d92',weight:v.id===selected.id?4:2,opacity:v.id===selected.id?.95:.55,dashArray:'5 7'}).addTo(routeLayer);
+  line.on('click',()=>selectVisit(v.id,false));line.bindTooltip(`${escape(transportName(leg))} · ${escape(time(leg))}`,{sticky:true});
+ }
+ for(const p of model.points.values()){
+  const active=p.id===selected.at;const n=p.visits[0].number;
+  const html=`<button class="map-dot ${active?'active':''}" style="--point:${colors[p.kind]}" data-place="${p.id}" aria-label="${escape(places[p.id].name)}，${p.kind==='visit'?'游览地点':'中转地点'}，${p.visits.length} 次到访" aria-pressed="${active}"><span>${n}</span></button>`;
+  const marker=L.marker(point(p.id),{icon:L.divIcon({className:'dot-hit',html,iconSize:[40,40],iconAnchor:[20,20]}),keyboard:false,zIndexOffset:active?1000:0}).addTo(markerLayer);
+  marker.bindTooltip(escape(places[p.id].name),{direction:'top',offset:[0,-10]});
+  const element=marker.getElement();L.DomEvent.disableClickPropagation(element);element.querySelector('button').addEventListener('click',()=>selectVisit(p.visits.some(v=>v.id===selected.id)?selected.id:p.visits[0].id));
+ }
 }
-function navigationLink(e){
-  if(!e.from)return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${places[e.at].name} ${places[e.at].address||''}`)}`;
-  return `https://www.google.com/maps/dir/?api=1&origin=${point(e.from).join(',')}&destination=${point(e.to).join(',')}&travelmode=${e.mode==='walk'?'walking':e.mode==='ride'?'driving':'transit'}`;
+function navigationLink(e){return e.from?`https://www.google.com/maps/dir/?api=1&origin=${point(e.from).join(',')}&destination=${point(e.to).join(',')}&travelmode=${e.mode==='walk'?'walking':e.mode==='ride'?'driving':'transit'}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(places[e.at].name+' '+(places[e.at].address||''))}`;}
+function activityHTML(e){return `<li class="activity-item"><time>${escape(time(e))}</time><h4>${escape(e.title)}</h4>${e.status?`<span class="tag">${escape(e.status)}</span>`:''}${e.detail?`<p>${escape(e.detail)}</p>`:''}${e.cost?`<p>费用：${escape(e.cost)}</p>`:''}${e.checklist?`<ul>${e.checklist.map(x=>`<li>${escape(x)}</li>`).join('')}</ul>`:''}${e.alternativePlace?`<a href="${navigationLink({at:e.alternativePlace})}" target="_blank" rel="noopener">备选用餐地点 ↗</a>`:''}</li>`;}
+function travelHTML(v){
+ const e=v.outgoing;if(!e)return '<div class="end-note">此处为当天最后一站，无后续交通安排。</div>';
+ const next=model.visits[model.visits.indexOf(v)+1];
+ return `<section class="departure"><div class="departure-label">前往下一站 · ${escape(transportName(e))}</div><h4>${escape(places[e.to].name)}</h4><div class="travel-times"><span>出发<strong>${e.start||'待确认'}</strong></span><span class="travel-arrow">→<small>${duration(e)}</small></span><span>到达<strong>${e.end||'待确认'}</strong></span></div>${e.estimated?'<span class="tag">分段规划估算 · 非确认班次</span>':''}${e.status?`<span class="tag">${escape(e.status)}</span>`:''}<p>${escape(e.title)}</p>${e.detail?`<p>${escape(e.detail)}</p>`:''}${v.kind==='transfer'&&v.activities.length?`<p>本站候车与准备：${v.activities.map(a=>escape(`${time(a)} ${a.title}${a.detail?'；'+a.detail:''}`)).join('；')}</p>`:''}${e.cost?`<p>费用：${escape(e.cost)}</p>`:''}<div class="links"><a href="${navigationLink(e)}" target="_blank" rel="noopener">打开交通导航 ↗</a>${next?`<button data-visit="${next.id}">查看下一站 →</button>`:''}</div></section>`;
 }
 function renderSelection(){
-  const e=selected,p=places[e.at||e.to],parent=model.nodes.get(e.parentId),isPlace=e.kind==='place';
-  $('selection').style.setProperty('--node',color(e));
-  $('selection').innerHTML=`<span class="type-badge">${nodeTypes[e.kind].icon} ${nodeTypes[e.kind].label} · ${parent?'二级':'一级'}</span><div class="time-label">${escape(time(e))} · ${escape(duration(e))}${e.mode?` · ${modes[e.mode]}`:''}</div><h3>${escape(e.title)}</h3>${e.from?`<div class="transfer-facts"><span>从 <b>${escape(places[e.from].name)}</b></span><span>到 <b>${escape(places[e.to].name)}</b></span><span>出发 ${e.start||'待定'} → 到达 ${e.end||'待定'}</span></div>`:`<div class="place-label">${escape(p.name)}</div>`}${parent?`<button class="parent-link" data-event="${parent.id}">↑ 所属${parent.kind==='place'?'地点':'中转'}：${escape(parent.title)}</button>`:''}${e.children?`<div class="selection-expand">${expandButton(e)}<span>${expanded.has(e.id)?'已展开':'点击 + 展开'} ${e.children.length} 项${isPlace?'活动':'具体交通'}</span></div>${e.kind==='transfer'?'<p class="estimate-note">起止时间为原行程规划窗口，包含已预留的候车与步行；不是已确认的车次时刻。</p>':''}`:''}${e.status?`<span class="tag">${escape(e.status)}</span>`:''}${e.optional?'<span class="tag">可按当天情况省略</span>':''}${e.detail?`<p>${escape(e.detail)}</p>`:''}${p.note?`<p>${escape(p.note)}</p>`:''}${e.cost?`<p><strong>费用：</strong>${escape(e.cost)}</p>`:''}${e.checklist?`<ul>${e.checklist.map(item=>`<li>${escape(item)}</li>`).join('')}</ul>`:''}${p.score&&(isPlace||e.kind==='activity')?`<div class="rating">推荐 ${p.score}/10 · 热度：${escape(p.popularity)}<br>${escape(p.review)}<br><small>行程推荐分；非实时平台评分</small></div>`:''}<div class="links"><a target="_blank" rel="noopener" href="${navigationLink(e)}">${e.from?'打开交通导航 ↗':'在地图中查看 ↗'}</a>${e.alternativePlace?`<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(places[e.alternativePlace].address)}">备选餐厅位置 ↗</a>`:''}</div>`;
+ const v=selected,p=places[v.at],same=model.points.get(v.at).visits;
+ $('selection').innerHTML=`<div class="place-heading"><span class="type-badge" style="color:${colors[v.kind]}">● ${v.kind==='visit'?'游览 / 停留地点':'中转地点'}</span><h3>${escape(p.name)}</h3>${p.approximate?'<small>位置为区域近似定位，实际入口以现场为准</small>':''}</div>${same.length>1?`<nav class="visit-switch" aria-label="选择本站到访时段">${same.map((x,i)=>`<button data-visit="${x.id}" aria-pressed="${x.id===v.id}">${x.start||'待定'} · 第 ${i+1} 次</button>`).join('')}</nav>`:''}${v.kind==='visit'?`<ol class="activity-list">${v.activities.map(activityHTML).join('')}</ol>`:''}${travelHTML(v)}${p.note?`<p class="place-note">${escape(p.note)}</p>`:''}${p.score&&v.kind==='visit'?`<p class="rating">推荐 ${p.score}/10 · 热度 ${escape(p.popularity)}<br>${escape(p.review)}<br><small>行程推荐分，非实时平台评分</small></p>`:''}${p.source?`<a class="source-link" href="${p.source}" target="_blank" rel="noopener">查看地点官方说明 ↗</a>`:''}`;
+ const index=model.visits.indexOf(v);$('visit-position').textContent=`第 ${index+1} / ${model.visits.length} 站`;$('previous').disabled=index===0;$('next').disabled=index===model.visits.length-1;
 }
-function row(e){return `<div class="node-row node-${e.kind}" style="--node:${color(e)}"><button class="event" data-event="${e.id}" aria-pressed="${selected.id===e.id}"><span class="event-dot">${nodeTypes[e.kind].icon}</span><span class="event-main"><small class="type-label">${nodeTypes[e.kind].label}${e.children?` · ${e.number}`:''}</small><time>${escape(time(e))} · ${escape(duration(e))}</time><span class="event-title">${escape(e.title)}</span>${e.status?`<span class="event-small">${escape(e.status)}</span>`:''}</span></button>${e.children?expandButton(e):''}</div>`;}
 function renderEventList(){
-  $('list-title').textContent=mode==='time'?'按时间查看层级安排':'今天的地点与中转';$('event-count').textContent=`${model.parents.length} 个一级节点`;
-  $('events').innerHTML=model.parents.map(p=>`<section class="node-group">${row(p)}${expanded.has(p.id)?`<div class="node-children" aria-label="${escape(p.title)}的子节点">${p.children.map(row).join('')}</div>`:''}</section>`).join('');
-  $('time-rail').hidden=mode!=='time';
-  $('time-rail').innerHTML=visible().map(e=>`<div class="rail-node ${e.parentId?'rail-child':''}" style="--node:${color(e)}"><button data-event="${e.id}" aria-pressed="${selected.id===e.id}"><b>${e.start||'待定'} · ${nodeTypes[e.kind].icon}</b><span>${escape(e.title)}</span></button>${e.children?expandButton(e,true):''}</div>`).join('');
+ $('list-title').textContent='按时间走 · 每站的事项与下一程';$('event-count').textContent=`${model.points.size} 个地点`;
+ $('events').innerHTML=model.visits.map(v=>`<button class="stop-row" data-visit="${v.id}" aria-pressed="${selected.id===v.id}"><span class="stop-dot" style="background:${colors[v.kind]}">${v.number}</span><span><time>${v.start||'时间待定'}</time><b>${escape(places[v.at].name)}</b><small>${v.outgoing?`${escape(transportName(v.outgoing))} → ${escape(places[v.outgoing.to].name)}`:'当天最后一站'}</small></span><span>›</span></button>`).join('');
 }
-function refresh(){renderSelection();renderEventList();renderMap();writeHash();const active=$('time-rail').querySelector('[aria-pressed=true]');if(active)$('time-rail').scrollLeft=Math.max(0,active.parentElement.offsetLeft-$('time-rail').offsetLeft-$('time-rail').clientWidth/2+active.parentElement.clientWidth/2);}
-function focusNode(e){if(!map)return;if(e.from)map.fitBounds(L.latLngBounds(route(e)),{paddingTopLeft:[90,95],paddingBottomRight:[90,mode==='time'?210:130],maxZoom:15,animate:false});else {const center=expanded.has(e.id)?map.unproject(map.project(point(e.at),16).add([0,map.getSize().y/2-110]),16):point(e.at);map.setView(center,16,{animate:false});}}
-function selectEvent(id,focus=true){const e=model.nodes.get(id);if(!e)return;selected=e;if(e.parentId)expanded.add(e.parentId);refresh();if(focus)focusNode(e.parentId?model.nodes.get(e.parentId):e);}
-function toggleParent(id){const p=model.nodes.get(id);if(!p?.children)return;if(expanded.has(id)){expanded.delete(id);if(selected.parentId===id)selected=p;}else{expanded.add(id);selected=p;}refresh();if(expanded.has(id))focusNode(p);}
+function setPanel(value,open=true){panel=value;$('schedule').dataset.panel=value;$('schedule').dataset.open=String(open);$('overview').setAttribute('aria-expanded',String(open&&value==='overview'));}
+function selectVisit(id,focus=true){const v=model.byId.get(id);if(!v)return;selected=v;renderSelection();renderEventList();renderMap();writeHash();setPanel('detail');$('panel-body').scrollTop=0;if(focus)focusVisit(v);}
 function renderDay(){
-  $('days').innerHTML=days.map(d=>`<button data-day="${d.id}" ${d.id===day.id?'aria-current="date"':''}><strong>${d.label}</strong><small>${d.weekday}</small></button>`).join('');
-  $('day-kicker').textContent=`DAY ${days.indexOf(day)+1} / ${day.weekday} · 当地时间`;$('day-title').textContent=day.title;$('day-subtitle').textContent=day.subtitle;
-  const total=sum(day.budget);$('budget').innerHTML=total===null?'<strong>待核算</strong><span>交通与住宿确定后补全 ↗</span>':`<strong>$${total}</strong><span>今日预算 ↗</span><em>${total>100?`超目标 $${total-100}`:'目标 $100 以内'}</em>`;
-  $('day-notes').innerHTML=day.notes.map(n=>`<li>${escape(n)}</li>`).join('');
-  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));refresh();fitDay();
+ $('days').innerHTML=days.map(d=>`<button data-day="${d.id}" ${d.id===day.id?'aria-current="date"':''}><strong>${d.label}</strong><small>${d.weekday}</small></button>`).join('');
+ $('day-kicker').textContent=`DAY ${days.indexOf(day)+1} / ${day.weekday} · 当地时间`;$('day-title').textContent=day.title;$('day-subtitle').textContent=day.subtitle;
+ const total=sum(day.budget);$('budget').innerHTML=total==null?'预算待核算 ↗':`预算 $${total} ↗${total>100?` · 超目标 $${total-100}`:''}`;
+ $('day-notes').innerHTML=day.notes.map(n=>`<li>${escape(n)}</li>`).join('');$('overview').textContent=`今日计划 · ${day.label}`;
+ document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mode));renderSelection();renderEventList();renderMap();fitDay();writeHash();
 }
 function openDialog(title,html){$('dialog-title').textContent=title;$('guide-content').innerHTML=html;$('guide').showModal();}
 function budgetTable(){
@@ -116,9 +78,17 @@ $('guide-open').addEventListener('click',()=>openDialog('预约与出行准备',
   <h3>核查来源</h3><p>营业、票价、班次可能变化，请在预约和出发前查看；链接不表示已订票。</p><ul>${trip.sources.map(([name,url])=>`<li><a href="${url}" target="_blank" rel="noopener">${escape(name)} ↗</a></li>`).join('')}</ul><p>数据更新：${trip.updated} · 时间：${trip.timezone}</p>`));
 $('guide-close').addEventListener('click',()=>$('guide').close());
 $('guide').addEventListener('click',e=>{if(e.target===$('guide')){const r=$('guide').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('guide').close();}});
-$('fit').addEventListener('click',fitDay);
-$('days').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(!b)return;day=days.find(d=>d.id===b.dataset.day);model=buildHierarchy(day,places);expanded.clear();selected=model.parents[0];renderDay();$('schedule').scrollTop=0;});
-document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;renderDay();}));
-for(const id of ['events','time-rail','selection'])$(id).addEventListener('click',e=>{const toggle=e.target.closest('[data-toggle]');if(toggle){toggleParent(toggle.dataset.toggle);return;}const b=e.target.closest('[data-event]');if(b)selectEvent(b.dataset.event);});
-window.addEventListener('hashchange',()=>{readHash();renderDay();});
-readHash();initMap();renderDay();if(selected.parentId)focusNode(model.nodes.get(selected.parentId));
+$('fit').addEventListener('click',()=>{if(mobile())setPanel(panel,false);fitDay();});
+$('overview').addEventListener('click',()=>{setPanel('overview');$('panel-body').scrollTop=0;});
+$('sheet-close').addEventListener('click',()=>setPanel(panel,false));
+$('sheet-list').addEventListener('click',()=>setPanel('overview'));
+$('days').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(!b)return;day=days.find(d=>d.id===b.dataset.day);model=buildRoute(day,places);selected=model.visits[0];renderDay();setPanel('overview',!mobile()||mode==='time');});
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===b));setPanel('overview',mode==='time'||!mobile());writeHash();}));
+for(const id of ['events','selection'])$(id).addEventListener('click',e=>{const b=e.target.closest('[data-visit]');if(b)selectVisit(b.dataset.visit);});
+for(const [id,delta] of [['previous',-1],['next',1]])$(id).addEventListener('click',()=>{const v=model.visits[model.visits.indexOf(selected)+delta];if(v)selectVisit(v.id);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('guide').open)setPanel(panel,false);});
+let touchStart;
+$('sheet-head').addEventListener('touchstart',e=>{touchStart=e.touches[0].clientY;},{passive:true});
+$('sheet-head').addEventListener('touchend',e=>{if(touchStart!==undefined&&e.changedTouches[0].clientY-touchStart>55)setPanel(panel,false);touchStart=undefined;},{passive:true});
+window.addEventListener('hashchange',()=>{readHash();renderDay();selectVisit(selected.id);});
+readHash();initMap();renderDay();setPanel('overview',!mobile()||mode==='time');

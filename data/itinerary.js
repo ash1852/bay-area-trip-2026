@@ -18,11 +18,11 @@ export const places = {
   ferry: place('Ferry Building · 轮渡大厦',37.7955,-122.3937,sight(8,'高','海湾、市集和餐饮集中，周末更热闹。')),
   larkspur: place('Larkspur Ferry Terminal',37.9449,-122.5094),
   muir: place('Muir Woods · 红杉森林',37.8913,-122.5808,sight(9,'高','主环线平缓，古老红杉很有沉浸感；接驳需提前预约。')),
-  muircafe: place('Muir Woods Trading Co. Café',37.8903,-122.5800,{parentPlace:'muir'}),
+  muircafe: place('Muir Woods Trading Co. Café',37.8903,-122.5800,{}),
   gotts: place('Gott’s Roadside · Ferry Building',37.7954,-122.3938,{address:'1 Ferry Building #6'}),
   pier33: place('Pier 33 · 恶魔岛登船码头',37.8065,-122.4056),
   alcatraz: place('Alcatraz · 恶魔岛牢房',37.8267,-122.4230,sight(9.5,'很高','音频导览与历史体验突出；岛上需要步行上坡。')),
-  alcatrazdock: place('Alcatraz · 岛上码头',37.8260,-122.4210,{parentPlace:'alcatraz',note:'自带食物只在指定码头区域食用。'}),
+  alcatrazdock: place('Alcatraz · 岛上码头',37.8260,-122.4210,{note:'自带食物只在指定码头区域食用。'}),
   pier39: place('Pier 39 · 海狮',37.8087,-122.4098,sight(7.5,'很高','海狮有趣，周边商业化明显，适合短停。')),
   coit: place('Coit Tower · 科伊特塔',37.8024,-122.4058,sight(8,'高','城市全景与壁画；排队、电梯和上坡需要留时间。')),
   northbeach: place('North Beach · 北滩',37.8003,-122.4091,sight(8,'高','街区氛围、咖啡和意大利餐饮是重点。')),
@@ -44,6 +44,17 @@ export const places = {
   lax: place('LAX · 洛杉矶机场',33.9416,-118.4085)
 };
 
+
+// 细分地点使用区域中心近似坐标；园内实际通行与开放情况以官方地图和现场为准。
+Object.assign(places, {
+ alcatrazyard: place('Alcatraz · 放风场',37.82715,-122.42385,{approximate:true,source:'https://www.nps.gov/places/000/alcatraz-recreation-yard.htm',note:'牢房西侧放风场；有台阶，现场关闭时保留牢房周边活动。'}),
+ alcatraz64: place('Alcatraz · 64 号楼展区',37.82616,-122.42165,{approximate:true,source:'https://www.nps.gov/places/000/alcatraz-building-64.htm',note:'码头附近的兵营建筑，展览、放映和书店按当日开放情况选择。'}),
+ muircathedral: place('Muir Woods · Cathedral Grove',37.8971,-122.5815,{approximate:true,source:'https://www.nps.gov/places/000/cathedral-grove.htm',note:'静音红杉林区域；沿主步道往返，点位为区域示意。'}),
+ californiaPowell: place('California / Powell · 缆车站',37.7918,-122.4090,{role:'transfer',approximate:true}),
+ coliseum: place('Coliseum · BART 换乘站',37.7537,-122.1970,{role:'transfer',approximate:true})
+});
+for(const id of ['bart12','powell','embarcadero','missionbart','larkspur','pier33','oakstation','coliseum','californiaPowell','cable'])places[id].role='transfer';
+
 // 每个活动：起止时间、地点、动作、说明。移动活动使用 from + to，地图自动生成路线。
 const stop = (start,end,at,title,detail='',extra={}) => ({start,end,at,title,detail,...extra});
 const move = (start,end,from,to,mode,title,detail='',extra={}) => ({start,end,from,to,mode,title,detail,...extra});
@@ -55,7 +66,7 @@ export const days = [
  move('09:50','10:25','wholefoods','hotel','walk','回酒店放食品 · 洗手间'),
  move('10:25','11:10','hotel','union','transit','BART 到 Powell · 步行联合广场','先走到 12th St BART，再跨湾至 Powell。预留候车时间。',{via:['bart12','powell']}),
  stop('11:10','11:30','union','联合广场短停'),
- move('11:30','12:20','union','cable','transit','步行 + California 缆车向西','含走到 California / Powell 及候车；以当天运行情况为准。',{cost:'缆车预算 $9'}),
+ move('11:30','12:20','union','cable','transit','步行 + California 缆车向西','含走到 California / Powell 及候车；以当天运行情况为准。',{cost:'缆车预算 $9',via:['californiaPowell'],legModes:['walk','cable'],legMinutes:[25,25]}),
  move('12:20','12:55','cable','lombard','transit','公交 + 步行去九曲花街','可参考 49 路方向，当天导航确认换乘。'),
  stop('12:55','13:25','lombard','九曲花街 · 沿坡向下看'),
  move('13:25','13:45','lombard','inout','walk','步行去渔人码头'),
@@ -159,7 +170,7 @@ export const days = [
  stop('13:10','13:15','lands','收拾 · 必须出发回酒店'),
  move('13:15','15:00','lands','hotel','transit','38/38R 方向 + BART 回 Oakland','公交接 BART；如延误明显，及时换打车保护航班时间。',{via:['powell','bart12']}),
  stop('15:00','15:20','hotel','取行李 · 洗手间 · 核对证件'),
- move('15:20','16:20','hotel','oak','transit','BART Coliseum + 机场接驳','导航选择 OAK / Oakland Airport，航站楼 T2。',{via:['bart12']}),
+ move('15:20','16:20','hotel','oak','transit','BART Coliseum + 机场接驳','导航选择 OAK / Oakland Airport，航站楼 T2。',{via:['bart12','coliseum'],legModes:['walk','train','shuttle'],legMinutes:[10,30,20]}),
  stop('16:20','17:15','oak','T2 安检 · 找登机口'),
  stop('17:15','17:50','oak','机场晚餐 · Subway / 同类三明治','全麦面包、足量肉类、蔬菜，酱汁适量；营业以当天为准。',{cost:'$18–25'}),
  stop('17:50','18:50','oak','登机口候机 · 登机','以航空公司通知的登机时间和登机口为准。'),
@@ -170,8 +181,47 @@ export const days = [
 
 // 同一地点可有多个时间节点，id 在单日内保持稳定即可。
 days.forEach(day => day.events.forEach((event,index) => { event.id ||= `${day.id}-${index+1}`; }));
+
+// 细分仍在唯一数据源完成；保留原时段边界与其他活动的稳定 id。
+const refine = (dayId,eventId,items) => {
+ const day=days.find(d=>d.id===dayId),index=day.events.findIndex(e=>e.id===eventId);
+ items.forEach((e,i)=>{e.id=i===0?eventId:`${eventId}-detail-${i}`;e.status ||= '细分时间为规划估算';});
+ day.events.splice(index,1,...items);
+};
+refine('2026-10-04','2026-10-04-6',[
+ stop('10:50','10:55','alcatrazdock','听入岛介绍'),
+ move('10:55','11:15','alcatrazdock','alcatraz','walk','沿上坡路前往牢房','约 400 米上坡，按现场路线慢走。')
+]);
+refine('2026-10-04','2026-10-04-8',[
+ move('12:35','12:40','alcatraz','alcatrazyard','walk','步行到放风场','有台阶；若关闭，在牢房周边停留后下行。'),
+ stop('12:40','12:50','alcatrazyard','放风场 · 历史环境与海湾视野'),
+ move('12:50','13:10','alcatrazyard','alcatrazdock','walk','沿开放步道下行回码头')
+]);
+refine('2026-10-04','2026-10-04-10',[
+ move('13:45','13:50','alcatrazdock','alcatraz64','walk','步行到 64 号楼'),
+ stop('13:50','14:10','alcatraz64','展览 · 岛屿历史','按当天开放展区自由参观。'),
+ stop('14:10','14:30','alcatraz64','放映 / 书店 · 自由休息','视放映时间和开放情况选择；不保证赶上完整场次。'),
+ move('14:30','14:40','alcatraz64','alcatrazdock','walk','返回码头 · 核对返程队伍')
+]);
+refine('2026-10-03','2026-10-03-11',[
+ stop('13:40','13:50','muir','入口 · 核对步道与门票','领取地图，查看当天主步道开放情况。',{cost:'成人门票预算 $15',status:'门票未购'}),
+ move('13:50','14:20','muir','muircathedral','walk','沿 Redwood Creek 主步道深入红杉林','边走边看；30 分钟为规划预留。'),
+ stop('14:20','14:50','muircathedral','Cathedral Grove · 安静看红杉'),
+ move('14:50','15:30','muircathedral','muir','walk','沿主步道返回入口','边走边拍照；以入口地图为准，不延误 16:00 接驳。')
+]);
+// 已有 via 仅代表换乘锚点。分段用时是规划分配，不是已查到的车次。
+const legPlans={
+ 'hotel>union':[5,30,10], 'hotel>ferry':[5,30,10], 'gotts>hotel':[10,35,10],
+ 'hotel>pier33':[10,35,30], 'bridge>chipotle':[45,35,10], 'chinatown>biryani':[15,30,10],
+ 'hotel>painted':[5,30,30], 'souvla>hotel':[15,45,15], 'hotel>tea':[5,30,55], 'lands>hotel':[60,35,10]
+};
+for(const day of days)for(const event of day.events){
+ if(event.via && !event.legMinutes)event.legMinutes=legPlans[`${event.from}>${event.to}`];
+ if(event.via?.length===2 && !event.legModes)event.legModes=[['bridge','lands'].includes(event.from)?'transit':'walk','train',['painted','tea'].includes(event.to)?'transit':'walk'];
+}
+
 export const trip = {
- title:'湾区慢行', dates:'2026.10.02 — 10.10', updated:'2026-09-23', timezone:'America/Los_Angeles',
+ title:'湾区慢行', dates:'2026.10.02 — 10.10', updated:'2026-09-24', timezone:'America/Los_Angeles',
  budgetTarget:100,
  disclaimer:'时间为规划目标；交通线是地点间连接示意，不是实时导航或已核实道路轨迹。金额为预算，不含酒店、机票。',
  ratingsNote:'评分是本行程的推荐度 /10；热度与体验为定性参考，不是实时平台评分或游客人数统计。',
@@ -190,6 +240,8 @@ export const trip = {
   {name:'Sausalito / Baker Beach / 完整 Presidio 徒步',reason:'本次不额外加入；Muir Woods 的船车衔接与既有海岸景点优先。'}
  ],
  sources:[
+  ['恶魔岛具体地点与无障碍路线','https://www.nps.gov/alca/planyourvisit/accessibility.htm'],
+  ['Muir Woods 主步道','https://www.nps.gov/goga/planyourvisit/muir-woods-main-trail.htm'],
   ['酒店','https://www.wyndhamhotels.com/ramada/oakland-california/ramada-oakland-downtown-city-center/overview'],
   ['早餐时间参考（订房平台，待前台确认）','https://www.booking.com/hotel/us/hotel-13th-street-oakland.html'],
   ['会议程序','https://conf.researchr.org/program/splash-issta-2026/program-splash-issta-2026/Detailed-Table'],

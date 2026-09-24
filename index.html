@@ -21,23 +21,25 @@
       <div id="map" role="region" aria-label="可缩放行程地图"></div>
       <div class="map-toolbar">
         <div class="mode-switch" role="group" aria-label="地图显示模式">
-          <button data-mode="route" aria-pressed="true">路线模式</button><button data-mode="time" aria-pressed="false">时间模式</button>
+          <button data-mode="route" aria-pressed="true">地图</button><button data-mode="time" aria-pressed="false">时间表</button>
         </div>
-        <button id="fit" class="fit">查看全日</button>
+        <button id="fit" class="fit">全日</button>
       </div>
       <div id="map-message" class="map-message" role="status" hidden></div>
       <div class="map-bottom">
-        <div class="legend"><span style="--key:#207568">● 景点 / 地点</span><span style="--key:#a86109">◆ 活动</span><span style="--key:#315eb3">↗ 中转</span><span style="--key:#8651ad">▰ 具体交通</span></div>
-        <p class="map-caption">点击节点看详情，点击 + 展开子节点。虚线为路线示意；细线连接避让标签与实际位置。</p>
-        <div id="time-rail" class="time-rail" aria-label="点击时间定位地图" hidden></div>
+        <div class="legend"><span style="--key:#237b65">● 游览 / 停留</span><span style="--key:#406cc3">● 中转</span></div>
+        <p class="map-caption">点圆点查看事项 · 虚线为路线示意</p>
+        <button id="overview" aria-expanded="false">今日计划</button>
       </div>
     </section>
-    <aside id="schedule" class="schedule" tabindex="-1">
-      <div class="day-heading"><p id="day-kicker" class="eyebrow"></p><h2 id="day-title"></h2><p id="day-subtitle"></p><button id="budget" class="budget"></button></div>
-      <div class="selection" id="selection" aria-live="polite"></div>
-      <div class="list-heading"><h3 id="list-title">今天的路线</h3><span id="event-count"></span></div>
-      <div id="events" class="events"></div>
-      <div class="day-notes"><h3>留一点余量</h3><ul id="day-notes"></ul></div>
+    <aside id="schedule" class="schedule" tabindex="-1" data-open="false" data-panel="overview" aria-label="地点事项与时间表">
+      <div id="sheet-head" class="sheet-head"><button id="sheet-list">今日计划</button><span>向下滑动可收起</span><button id="sheet-close" aria-label="收起事项面板">×</button></div>
+      <div id="panel-body" class="panel-body">
+        <div class="overview-content"><div class="day-heading"><p id="day-kicker" class="eyebrow"></p><h2 id="day-title"></h2><p id="day-subtitle"></p><button id="budget" class="budget"></button></div></div>
+        <div class="selection" id="selection" aria-live="polite"></div>
+        <div class="overview-content"><div class="list-heading"><h3 id="list-title"></h3><span id="event-count"></span></div><div id="events" class="events"></div><div class="day-notes"><h3>留一点余量</h3><ul id="day-notes"></ul></div></div>
+      </div>
+      <div class="visit-navigation"><button id="previous">← 上一站</button><span id="visit-position"></span><button id="next">下一站 →</button></div>
     </aside>
   </main>
   <dialog id="guide"><div class="dialog-top"><h2 id="dialog-title">预约与出行准备</h2><button id="guide-close" aria-label="关闭">×</button></div><div id="guide-content"></div></dialog>
