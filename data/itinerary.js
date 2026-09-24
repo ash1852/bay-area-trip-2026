@@ -17,12 +17,12 @@ export const places = {
   chipotle: place('Chipotle · Oakland',37.8040,-122.2710,{address:'1302 Broadway, Oakland'}),
   ferry: place('Ferry Building · 轮渡大厦',37.7955,-122.3937,sight(8,'高','海湾、市集和餐饮集中，周末更热闹。')),
   larkspur: place('Larkspur Ferry Terminal',37.9449,-122.5094),
-  muir: place('Muir Woods · 红杉森林',37.8913,-122.5808,sight(9,'高','主环线平缓，古老红杉很有沉浸感；接驳需提前预约。')),
-  muircafe: place('Muir Woods Trading Co. Café',37.8903,-122.5800,{}),
+  muir: place('Muir Woods · 游客中心 / 入口',37.8927962,-122.5724843,sight(9,'高','主环线平缓，古老红杉很有沉浸感；接驳需提前预约。')),
+  muircafe: place('Muir Woods Trading Co. Café',37.8933703,-122.5728223,{}),
   gotts: place('Gott’s Roadside · Ferry Building',37.7954,-122.3938,{address:'1 Ferry Building #6'}),
   pier33: place('Pier 33 · 恶魔岛登船码头',37.8065,-122.4056),
-  alcatraz: place('Alcatraz · 恶魔岛牢房',37.8267,-122.4230,sight(9.5,'很高','音频导览与历史体验突出；岛上需要步行上坡。')),
-  alcatrazdock: place('Alcatraz · 岛上码头',37.8260,-122.4210,{note:'自带食物只在指定码头区域食用。'}),
+  alcatraz: place('Alcatraz · 恶魔岛牢房',37.8266591,-122.4230146,sight(9.5,'很高','音频导览与历史体验突出；岛上需要步行上坡。')),
+  alcatrazdock: place('Alcatraz · 岛上码头',37.8266612,-122.4208080,{note:'自带食物只在指定码头区域食用。'}),
   pier39: place('Pier 39 · 海狮',37.8087,-122.4098,sight(7.5,'很高','海狮有趣，周边商业化明显，适合短停。')),
   coit: place('Coit Tower · 科伊特塔',37.8024,-122.4058,sight(8,'高','城市全景与壁画；排队、电梯和上坡需要留时间。')),
   northbeach: place('North Beach · 北滩',37.8003,-122.4091,sight(8,'高','街区氛围、咖啡和意大利餐饮是重点。')),
@@ -47,9 +47,10 @@ export const places = {
 
 // 细分地点使用区域中心近似坐标；园内实际通行与开放情况以官方地图和现场为准。
 Object.assign(places, {
- alcatrazyard: place('Alcatraz · 放风场',37.82715,-122.42385,{approximate:true,source:'https://www.nps.gov/places/000/alcatraz-recreation-yard.htm',note:'牢房西侧放风场；有台阶，现场关闭时保留牢房周边活动。'}),
- alcatraz64: place('Alcatraz · 64 号楼展区',37.82616,-122.42165,{approximate:true,source:'https://www.nps.gov/places/000/alcatraz-building-64.htm',note:'码头附近的兵营建筑，展览、放映和书店按当日开放情况选择。'}),
- muircathedral: place('Muir Woods · Cathedral Grove',37.8971,-122.5815,{approximate:true,source:'https://www.nps.gov/places/000/cathedral-grove.htm',note:'静音红杉林区域；沿主步道往返，点位为区域示意。'}),
+ alcatrazyard: place('Alcatraz · 放风场',37.8270715,-122.4237067,{approximate:true,source:'https://www.nps.gov/places/000/alcatraz-recreation-yard.htm',note:'牢房西侧放风场；有台阶，现场关闭时保留牢房周边活动。'}),
+ alcatraz64: place('Alcatraz · 64 号楼展区',37.8267075,-122.4217048,{approximate:true,source:'https://www.nps.gov/places/000/alcatraz-building-64.htm',note:'码头附近的兵营建筑，展览、放映和书店按当日开放情况选择。'}),
+ muirshuttle: place('Muir Woods · 接驳站',37.8922302,-122.5716451,{role:'transfer'}),
+ muircathedral: place('Muir Woods · Cathedral Grove',37.8982635,-122.5756648,{approximate:true,source:'https://www.nps.gov/places/000/cathedral-grove.htm',note:'静音红杉林区域；沿主步道往返，点位为区域示意。'}),
  californiaPowell: place('California / Powell · 缆车站',37.7918,-122.4090,{role:'transfer',approximate:true}),
  coliseum: place('Coliseum · BART 换乘站',37.7537,-122.1970,{role:'transfer',approximate:true})
 });
@@ -85,12 +86,12 @@ export const days = [
  stop('09:45','10:20','ferry','周末市集与海湾短逛'),stop('10:20','10:45','ferry','Gate C 候船','登船口以现场信息为准。'),
  move('10:45','11:20','ferry','larkspur','ferry','渡轮 → Larkspur','计划参考班次，出行前再核对。',{status:'待核实',cost:'约 $9.50'}),
  stop('11:20','12:00','larkspur','找接驳站 · 洗手间 · 提前排队'),
- move('12:00','13:00','larkspur','muircafe','shuttle','预约接驳 → Muir Woods','预留 45–60 分钟道路交通。',{status:'待预约',cost:'往返接驳约 $4'}),
+ move('12:00','13:00','larkspur','muircafe','shuttle','预约接驳 → Muir Woods','预留 45–60 分钟道路交通。',{status:'待预约',cost:'往返接驳约 $4',via:['muirshuttle'],legModes:['shuttle','walk'],legMinutes:[55,5]}),
  stop('13:00','13:35','muircafe','午餐 · 火鸡三明治 / 汤','根据当日供应补足蛋白质；自带零食应对排队。',{cost:'$18–23'}),
  move('13:35','13:40','muircafe','muir','walk','步行入林'),
  stop('13:40','15:30','muir','红杉主环线 · 悠闲步行','如接驳更早到达，可在午餐后增加森林停留。保持回程余量。',{cost:'成人门票预算 $15',status:'门票未购'}),
  stop('15:30','16:00','muir','洗手间 · 返回接驳站排队'),
- move('16:00','17:00','muir','larkspur','shuttle','接驳返回 Larkspur','必须预约返程时段。',{status:'待预约'}),
+ move('16:00','17:00','muirshuttle','larkspur','shuttle','接驳返回 Larkspur','必须预约返程时段。',{status:'待预约'}),
  stop('17:00','18:00','larkspur','休息吃零食 · 17:40 开始候船'),
  move('18:00','18:35','larkspur','ferry','ferry','渡轮 → 旧金山','参考计划班次，需核实。',{status:'待核实',cost:'约 $9.50'}),
  move('18:35','18:45','ferry','gotts','walk','步行去晚餐'),
@@ -209,6 +210,12 @@ refine('2026-10-03','2026-10-03-11',[
  stop('14:20','14:50','muircathedral','Cathedral Grove · 安静看红杉'),
  move('14:50','15:30','muircathedral','muir','walk','沿主步道返回入口','边走边拍照；以入口地图为准，不延误 16:00 接驳。')
 ]);
+refine('2026-10-03','2026-10-03-12',[
+ move('15:30','15:40','muir','muirshuttle','walk','入口洗手间 · 返回接驳站'),
+ stop('15:40','16:00','muirshuttle','提前排队等接驳')
+]);
+// 几何位置依据 OpenStreetMap 对应实体校准；坐标为点位或建筑中心，不代表入口。
+for(const [id,osm] of Object.entries({alcatraz:'way/128245373',alcatrazdock:'node/1526523486',alcatrazyard:'way/151291054',alcatraz64:'way/24617219',muir:'node/1250312226',muircafe:'node/2910193095',muircathedral:'node/369172769',muirshuttle:'node/6456312203'}))places[id].coordinateSource=`https://www.openstreetmap.org/${osm}`;
 // 已有 via 仅代表换乘锚点。分段用时是规划分配，不是已查到的车次。
 const legPlans={
  'hotel>union':[5,30,10], 'hotel>ferry':[5,30,10], 'gotts>hotel':[10,35,10],
