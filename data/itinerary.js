@@ -66,7 +66,7 @@ const stop = (start,end,at,title,detail='',extra={}) => ({start,end,at,title,det
 const move = (start,end,from,to,mode,title,detail='',extra={}) => ({start,end,from,to,mode,title,detail,...extra});
 const breakfast = (end='08:45',start='08:00') => stop(start,end,'hotel','起床 · 酒店早餐','优先蛋白质、水果与适量主食；具体供应内容不保证。早餐时段入住再确认。');
 export const days = [
- {id:'2026-10-02',label:'10/02',weekday:'周五',title:'旧街区 · 恶魔岛夜游',subtitle:'白天慢逛 · 17:55 夜游目标',budget:{food:55,transport:90,tickets:70.65,groceries:0},notes:['09/25 官方购票页实查：10/2 的 17:55、18:30、19:05 均显示可选；17:55 提示余票较少。尚未订票，优先选 17:55。','上午不赶景点，08:00 起床；Coit Tower 若排队过长只看壁画和山顶，不挤占晚餐及登船。','返岛码头 20:20 后的船班尚未从官方返程表核实：20:20–21:00 是候船和航行预留窗口，不是船班。付款前请向官方确认能在 21:00 前回 Pier 33；否则本日 22:00 回酒店的目标不能成立，需重新选择返程或夜游安排。','为保护晚归时间，夜游后预算打车回 Oakland；全日约 $216，明显超出 $100，主要是夜游票和跨湾晚间打车。若确认早一班返程、公共交通能在 22:00 前到酒店，可省约 $50–65。','夜游不是原白天四小时自由游的完全替代：外围道路可能关闭，优先牢房音频与现场夜间节目；岛内细分时间为弹性估算。'],events:[
+ {id:'2026-10-02',label:'10/02',weekday:'周五',title:'旧街区 · 恶魔岛夜游',subtitle:'17:55 夜游 · 20:40 返航 · BART 回酒店',budget:{food:55,transport:20,tickets:70.65,groceries:0},notes:['09/25 官方购票页实查：10/2 的 17:55、18:30、19:05 均显示可选；17:55 提示余票较少。尚未订票，优先选 17:55。','上午不赶景点，08:00 起床；Coit Tower 若排队过长只看壁画和山顶，不挤占晚餐及登船。','已读取官方 2026/3/8–11/1 船班表：选 20:40 离岛，预计 20:55 到 Pier 33。20:20 回到岛上码头排队；返程先到先上，不单独预留座位。21:25 是后备船班，选它会晚于 22:00 回酒店，不作为主计划。','返程主方案：Pier 33 沿海滨步行至 Embarcadero BART；乘 21:40 黄线 Antioch 方向，21:52 到 12th St/Oakland，步行回酒店，目标 22:00。列车依据 2026/8/10 官方工作日表，步行及靠岸时间是估算，延误不能保证准点。全日预算约 $146（餐饮 $55、交通 $20、夜游及可选 Coit 登塔 $70.65），比原默认跨湾打车方案省 $70。','备用：若 21:00 仍未离开 Pier 33，或导航预计 21:30 后才到 BART 站，先考虑短途打车去 Embarcadero（额外约 $15–25）；若赶不上 21:40 黄线或线路停运，改跨湾打车回酒店（约 $60–80，以 App 报价为准）。不靠跑步抢车。','夜游不是原白天四小时自由游的完全替代：外围道路可能关闭，优先牢房音频与现场夜间节目；岛内细分时间为弹性估算。'],events:[
  breakfast(),stop('08:45','10:15','hotel','休息 · 熟悉交通 · 保存船票','确认早餐时段、10/10 行李寄存；设置 Clipper / BART 付款方式，带身份证明、防风外套和水。未收到有效票券与确认号不视为预订成功。'),
  move('10:15','11:15','hotel','chinatown','transit','BART → Embarcadero · 步行唐人街','含跨湾候车和步行缓冲；具体发车以当天导航为准。',{via:['bart12','embarcadero'],legMinutes:[10,30,20]}),
  stop('11:15','12:00','chinatown','唐人街 · Grant Avenue 与街巷','商店营业时段游览，慢慢走，不专门排长队。'),
@@ -81,7 +81,7 @@ export const days = [
  move('16:15','16:20','pier39','chowders','walk','走到码头入口 Chowders'),
  stop('16:20','17:05','chowders','登岛前吃早晚餐','选海鲜三明治或含蛋白质的沙拉；想尝 clam chowder 可选小杯配主食，不只喝汤。菜单供应现场确认；不额外安排炸物。',{cost:'含税预算 $20–26'}),
  move('17:05','17:20','chowders','pier33','walk','沿海滨步行 Pier 33'),
- stop('17:20','17:55','pier33','验票 · 洗手间 · 排队登船','提前 35 分钟抵达；确认当晚回程表和最后登船时间，优先选可在 21:00 前返回大陆的班次。'),
+ stop('17:20','17:55','pier33','验票 · 洗手间 · 排队登船','提前 35 分钟抵达；持有效票券与身份证明，现场复核 20:40 返程是否有临时变动。'),
  move('17:55','18:25','pier33','alcatrazdock','ferry','17:55 Night Tour · 绕岛与讲解','17:55 是官方实际可选的出发时刻；航行与靠岸 30 分钟为规划估算。',{status:'09/25 可选 · 未订',cost:'成人 $59.65，往返及音频导览'}),
  stop('18:25','18:35','alcatrazdock','入岛说明 · 核对夜间节目','查看节目地点、道路开放与回程队伍；夜游以工作人员安排为准。'),
  move('18:35','18:55','alcatrazdock','alcatraz','walk','跟随导览上坡至牢房','约 400 米、累计上升约 40 米；沿途讲解结束时间可能变动。'),
@@ -90,8 +90,12 @@ export const days = [
  move('20:00','20:05','alcatraz','alcatrazyard','walk','开放时走到放风场','这是条件节点：夜间关闭则在牢房允许区域拍照，并直接沿开放道路下山。'),
  stop('20:05','20:10','alcatrazyard','放风场与夜景 · 仅开放时','不承诺夜间开放；不绕行封闭外围道路。',{optional:true,status:'现场开放决定'}),
  move('20:10','20:20','alcatrazyard','alcatrazdock','walk','沿开放路线下行码头','不要等到最后一刻排队；如现场要求更早候船，提前结束外围拍照。'),
- move('20:20','21:00','alcatrazdock','pier33','ferry','候船 + 回到 Pier 33 · 待核实窗口','不是 20:20 固定开船；官方表读取未成功，需预订前核实实际返程班次。须能在 21:00 前抵达大陆才采用后续时间表。',{status:'返程船班待官方确认'}),
- move('21:00','22:00','pier33','hotel','ride','打车返回 Oakland · 含候车缓冲','以 21:00 前回码头为前提；预计 45–60 分钟含叫车，拥堵时可能更久。若官方回程无法满足，不可直接套用此时间。',{cost:'打车预留 $60–80；非实时报价',status:'条件估算 · 22:00 目标'})
+ stop('20:20','20:40','alcatrazdock','提前 20 分钟排队 · 20:40 返程','官方返程采用先到先上，不是预约座位。不要等到 20:40 才走到码头。'),
+ move('20:40','20:55','alcatrazdock','pier33','ferry','20:40 离岛 → Pier 33','20:40 离岛已核实于官方夏季表（适用至 2026/11/1）；约 15 分钟航行，20:55 到达为估算。返程已包含在夜游票内。',{status:'官方班表已核实 · 抵达为估算',cost:'包含在夜游票内'}),
+ move('20:55','21:30','pier33','embarcadero','walk','下船 · 沿海滨步行至 Embarcadero BART','预留 35 分钟，含下船、约 1.8–2 公里步行和进站。沿 The Embarcadero 向 Ferry Building / Market Street 方向走，入站找黄线 Antioch 方向。F 路街车仅作现场有车时的替代，不依赖其候车衔接。',{status:'步行窗口为规划估算'}),
+ stop('21:30','21:40','embarcadero','站台候车 · 核对 Antioch 方向','目标 21:40 黄线；不要乘 Dublin/Pleasanton 蓝线去 12th St，它不会到本站。以现场屏幕和服务提醒为准。'),
+ move('21:40','21:52','embarcadero','bart12','train','BART 黄线 → 12th St/Oakland','官方 2026/8/10 起工作日时刻表：Embarcadero 21:40 → West Oakland 21:47 → 12th St/Oakland 21:52，不需换乘。普通 BART 无需预订座位；用 Clipper 或官方支持的支付方式乘车。',{status:'官方工作日班表已核实',cost:'单程保守预留 $6–7；按实际扣费'}),
+ move('21:52','22:00','bart12','hotel','walk','出站 · 步行回 Ramada','从靠近 13th Street / Broadway 的出口出站，前往 371 13th Street。8 分钟含出站，22:00 为正常运行下的目标，不是准点保证。',{status:'步行及到店时间为估算'})
  ]},
  {id:'2026-10-03',label:'10/03',weekday:'周六',title:'红杉森林的一天',subtitle:'轮渡 · Muir Woods · 海湾晚餐',budget:{food:47,transport:35,tickets:15,groceries:10},notes:['09/24 官方接驳页面曾查到去程 12:00、回程 16:00 可选，均未订；余票会变化，以实际票面重排渡轮。','轮渡按官方 2026 年 4 月起周末表：SF 10:45 → Larkspur 11:20，返程 18:00 → 18:35；临行复核服务变动。Muir Woods 手机信号不可靠，离线保存票券。','在森林总停留约 3 小时包含午餐；本表主环线及静坐约 1 小时 50 分钟；提前到达可延长。'],events:[
  breakfast(),stop('08:45','09:00','hotel','装水 · 零食 · 外套 · 离线票'),
@@ -233,7 +237,7 @@ export const trip = {
  disclaimer:'时间为规划目标；交通线是地点间连接示意，不是实时导航或已核实道路轨迹。金额为预算，不含酒店、机票。',
  ratingsNote:'评分是本行程的推荐度 /10；热度与体验为定性参考，不是实时平台评分或游客人数统计。',
  reservations:[
-  {when:'优先办理',title:'恶魔岛 10/2 · 17:55 Night Tour',detail:'09/25 官方实查可选且余票较少，成人 $59.65。先确认回程可在 21:00 前到 Pier 33，再付款；目前尚未订票。17:20 到码头。夜游后打车，22:00 回酒店是条件目标。',url:'https://alcatrazcitycruises.com/tickets/alcatraz-night-tour'},
+  {when:'优先办理',title:'恶魔岛 10/2 · 17:55 Night Tour',detail:'选 10/2 的 5:55 PM（17:55）Night Tour，成人 $59.65；09/25 曾实查可选，实际余票以付款页为准，尚未订票。17:20 到 Pier 33。官方返程表已确认 20:40 离岛，返程船票已包含，提前 20 分钟排队。21:40 黄线 BART 回 Oakland，目标 22:00 回酒店；延误时打车备用。',url:'https://alcatrazcitycruises.com/tickets/alcatraz-night-tour'},
   {when:'出发前 / 当天',title:'10/10 de Young 与日本茶园',detail:'de Young 计划 10:15 到馆（不是预约时隙），买常设展成人 $20 / 有效学生证 $11；茶园预计 12:25 入园，可现场买票，准确票价以结账为准。茶屋 13:10 排队堂食抹茶与轻午餐，14:00 离园。',url:'https://www.famsf.org/visit/de-young'},
   {when:'现在',title:'Muir Woods 10/3 双向接驳',detail:'目标去程 12:00、回程 16:00；门票与接驳分开。订好后核对 Larkspur 轮渡衔接。',url:'https://gomuirwoods.com/'},
   {when:'现在',title:'10/6、10/9 火车与 YARTS',detail:'先查可售班次，再锁定 Merced 酒店与园内住宿；不要使用截图旧班次直接转乘。',url:'https://www.amtrak.com/'},
@@ -250,6 +254,9 @@ export const trip = {
   {name:'Sausalito / Baker Beach / 完整 Presidio 徒步',reason:'本次不额外加入；Muir Woods 的船车衔接与既有海岸景点优先。'}
  ],
  sources:[
+  ['恶魔岛官方 2026 夏季船班 PDF（09/25 已读取）','https://statue-static-content.s3.us-east-1.amazonaws.com/Alcatraz+City+Cruises+-+Schedule.pdf'],
+  ['BART 2026/8/10 工作日黄线表','https://www.bart.gov/sites/default/files/2026-07/August%2010,%20%202026%20%20WDAY%20Service%20for%20Antioch_SFO%20(Yellow)%20Line.pdf'],
+  ['BART 临时服务提醒','https://www.bart.gov/schedules/advisories'],
   ['恶魔岛夜游 · 09/25 官方可售班次实查','https://alcatrazcitycruises.com/tickets/alcatraz-night-tour'],
   ['de Young 票价与开放时间','https://www.famsf.org/visit/de-young-tickets-hours'],
   ['茶屋官方菜单','https://www.japaneseteagardensf.com/_files/ugd/889599_dec4f88512db4d7c99ec8d5a647459f0.pdf'],
