@@ -44,11 +44,18 @@ for(const day of days){
   if(e.legMinutes){const legs=travelLegs(e);assert.equal(legs[0].start,e.start);assert.equal(legs.at(-1).end,e.end);for(let i=1;i<legs.length;i++)assert.equal(legs[i-1].end,legs[i].start);}
  }
 }
-const island=buildRoute(days[2],places);
-for(const id of ['alcatraz','alcatrazdock','alcatrazyard','alcatraz64'])assert.ok(island.points.has(id));
-assert.equal(island.points.get('alcatrazdock').visits.length,3);
+const island=buildRoute(days.find(d=>d.id==='2026-10-02'),places);
+for(const id of ['alcatraz','alcatrazdock','alcatrazyard'])assert.ok(island.points.has(id));
+assert.equal(island.points.get('alcatrazdock').visits.length,2);
 assert.ok(island.points.get('bart12').visits.every(v=>v.kind==='transfer'));
 assert.equal(buildRoute(days[3],places).points.get('hotel').visits.filter(v=>v.activities.length).length,2);
 const bart=island.points.get('bart12').visits[0].outgoing;
-assert.equal(bart.mode,'train');assert.equal(bart.start,'09:00');assert.equal(bart.end,'09:35');assert.equal(bart.estimated,true);
+assert.equal(bart.mode,'train');assert.equal(bart.estimated,true);
+const night=days.find(d=>d.id==='2026-10-02');
+assert.ok(night.events.some(e=>e.from==='pier33'&&e.start==='17:55'&&e.status.includes('未订')));
+const finalDay=days.find(d=>d.id==='2026-10-10');
+for(const at of ['deyoung','deyoungtower','tea','teahouse'])assert.ok(finalDay.events.some(e=>e.at===at));
+assert.ok(!finalDay.events.some(e=>[e.at,e.from,e.to].includes('lands')));
+assert.ok(finalDay.events.some(e=>e.from==='tea'&&e.to==='hotel'&&e.start==='14:00'));
+assert.ok(finalDay.events.some(e=>e.to==='oak'&&minute('18:50')-minute(e.end)>=120));
 console.log('通过：物理地点分点、重复到访、事项完整、离站交通与估算分段。');
