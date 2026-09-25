@@ -234,7 +234,7 @@ for(const day of days)for(const event of day.events){
 export const trip = {
  title:'湾区慢行', dates:'2026.10.02 — 10.10', updated:'2026-09-25', timezone:'America/Los_Angeles',
  budgetTarget:100,
- disclaimer:'时间为规划目标；交通线是地点间连接示意，不是实时导航或已核实道路轨迹。金额为预算，不含酒店、机票。',
+ disclaimer:'时间为规划目标；实线沿路网或公共交通线路绘制，虚线为接入或未确认路段示意；不是实时导航。金额为预算，不含酒店、机票。',
  ratingsNote:'评分是本行程的推荐度 /10；热度与体验为定性参考，不是实时平台评分或游客人数统计。',
  reservations:[
   {when:'优先办理',title:'恶魔岛 10/2 · 17:55 Night Tour',detail:'选 10/2 的 5:55 PM（17:55）Night Tour，成人 $59.65；09/25 曾实查可选，实际余票以付款页为准，尚未订票。17:20 到 Pier 33。官方返程表已确认 20:40 离岛，返程船票已包含，提前 20 分钟排队。21:40 黄线 BART 回 Oakland，目标 22:00 回酒店；延误时打车备用。',url:'https://alcatrazcitycruises.com/tickets/alcatraz-night-tour'},

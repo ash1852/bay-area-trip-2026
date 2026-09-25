@@ -34,7 +34,7 @@ jobs:
           import {readFileSync,writeFileSync} from 'node:fs';
           const v=process.env.GITHUB_SHA;
           const html=readFileSync('_site/index.html','utf8').replace('href="styles.css"',`href="styles.css?v=${v}"`).replace('src="app.js"',`src="app.js?v=${v}"`);
-          const app=readFileSync('_site/app.js','utf8').replaceAll("./data/itinerary.js",`./data/itinerary.js?v=${v}`).replaceAll("./data/route-model.js",`./data/route-model.js?v=${v}`);
+          const app=readFileSync('_site/app.js','utf8').replaceAll("./data/itinerary.js",`./data/itinerary.js?v=${v}`).replaceAll("./data/route-model.js",`./data/route-model.js?v=${v}`).replaceAll("./data/route-paths.js",`./data/route-paths.js?v=${v}`).replaceAll("./data/route-geometry.js",`./data/route-geometry.js?v=${v}`);
           writeFileSync('_site/index.html',html);writeFileSync('_site/app.js',app);
           JS
       - uses: actions/upload-pages-artifact@v3

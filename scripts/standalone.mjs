@@ -2,8 +2,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 const root=new URL('../',import.meta.url);
 const read=path=>readFile(new URL(path,root),'utf8');
-const [html,css,leafletCss,leafletJs,data,routeModel,app]=await Promise.all(['index.html','styles.css','vendor/leaflet.css','vendor/leaflet.js','data/itinerary.js','data/route-model.js','app.js'].map(read));
+const [html,css,leafletCss,leafletJs,data,routeModel,routePaths,routeGeometryCode,app]=await Promise.all(['index.html','styles.css','vendor/leaflet.css','vendor/leaflet.js','data/itinerary.js','data/route-model.js','data/route-paths.js','data/route-geometry.js','app.js'].map(read));
 const bundled=html.replace('<link rel="stylesheet" href="vendor/leaflet.css"><link rel="stylesheet" href="styles.css">',()=>`<style>${leafletCss}\n${css}</style>`)
- .replace('<script src="vendor/leaflet.js" defer></script><script src="app.js" type="module"></script>',()=>`<script>${leafletJs.replace(/\/\/# sourceMappingURL=.*$/gm,'')}</script><script type="module">${data.replace(/export const /g,'const ')}\n${routeModel.replace(/export /g,'')}\n${app.replace(/^import .*?;\n/gm,'')}</script>`);
+ .replace('<script src="vendor/leaflet.js" defer></script><script src="app.js" type="module"></script>',()=>`<script>${leafletJs.replace(/\/\/# sourceMappingURL=.*$/gm,'')}</script><script type="module">${data.replace(/export const /g,'const ')}\n${routeModel.replace(/export /g,'')}\n${routePaths.replace(/export /g,'')}\n${routeGeometryCode.replace(/export /g,'')}\n${app.replace(/^import .*?;\n/gm,'')}</script>`);
 const output=process.argv[2]||new URL('../preview.html',import.meta.url);
 await writeFile(output,bundled);console.log('Standalone HTML saved:',String(output));

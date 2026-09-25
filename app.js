@@ -1,11 +1,14 @@
 import { days, places, trip } from './data/itinerary.js';
 import { buildRoute, duration } from './data/route-model.js';
+import { routePaths } from './data/route-paths.js';
+import { routeGeometry } from './data/route-geometry.js';
 const $=id=>document.getElementById(id);
 const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const modes={walk:'步行',transit:'公交 / 换乘',train:'轨道交通',ferry:'轮渡',shuttle:'接驳车',ride:'打车',flight:'飞机',cable:'缆车'};
 const colors={visit:'#237b65',transfer:'#406cc3'};
 const transportName=e=>e.mode==='train'?(e.title.includes('BART')?'BART':'Amtrak 火车'):modes[e.mode];
 const point=id=>[places[id].lat,places[id].lng];
+const geometry=leg=>routeGeometry(leg,places,routePaths);
 const time=e=>`${e.start||'待确认'}–${e.end||'待确认'}`;
 const sum=budget=>budget?Object.values(budget).reduce((a,b)=>a+b,0):null;
 let day=days[0],mode='route',selected,model,map,routeLayer,markerLayer,panel='overview';
@@ -19,7 +22,7 @@ function initMap(){
  tiles.on('tileerror',()=>{if(++errors>=4){$('map-message').hidden=false;$('map-message').textContent='底图暂时未加载，地点和事项仍可查看。';}});tiles.on('tileload',()=>{$('map-message').hidden=true;errors=0;});
  routeLayer=L.layerGroup().addTo(map);markerLayer=L.layerGroup().addTo(map);
 }
-function fitDay(){if(map)map.fitBounds([...model.points.keys()].map(point),{paddingTopLeft:[32,80],paddingBottomRight:[32,90],maxZoom:15,animate:false});}
+function fitDay(){if(map)map.fitBounds([...model.points.keys()].map(point).concat(model.visits.flatMap(v=>v.outgoing?geometry(v.outgoing).segments.flatMap(s=>s.points):[])),{paddingTopLeft:[32,80],paddingBottomRight:[32,90],maxZoom:15,animate:false});}
 function focusVisit(v){
  if(!map)return;const zoom=Math.max(map.getZoom(),['alcatraz','alcatrazdock','alcatrazyard','alcatraz64'].includes(v.at)?17:15);
  const shift=mobile()?map.getSize().y*.25:0;map.setView(map.unproject(map.project(point(v.at),zoom).add([0,shift]),zoom),zoom,{animate:false});
@@ -27,8 +30,11 @@ function focusVisit(v){
 function renderMap(){
  if(!map)return;routeLayer.clearLayers();markerLayer.clearLayers();
  for(const v of model.visits){if(!v.outgoing)continue;const leg=v.outgoing;
-  const line=L.polyline([point(leg.from),point(leg.to)],{color:v.id===selected.id?'#174f90':'#708d92',weight:v.id===selected.id?4:2,opacity:v.id===selected.id?.95:.55,dashArray:'5 7'}).addTo(routeLayer);
-  line.on('click',()=>selectVisit(v.id,false));line.bindTooltip(`${escape(transportName(leg))} · ${escape(time(leg))}`,{sticky:true});
+  const route=geometry(leg),active=v.id===selected.id;
+  for(const segment of route.segments){
+   const line=L.polyline(segment.points,{color:active?'#174f90':segment.schematic?'#8d959b':'#537d86',weight:active?4:3,opacity:active?.95:segment.schematic?.5:.7,dashArray:segment.schematic?'4 7':null}).addTo(routeLayer);
+   line.on('click',()=>selectVisit(v.id,false));line.bindTooltip(`${escape(transportName(leg))} · ${escape(time(leg))}<br>${escape(segment.schematic?'接入 / 路线示意':route.label)}`,{sticky:true});
+  }
  }
  for(const p of model.points.values()){
   const active=p.id===selected.at;const n=p.visits[0].number;
@@ -42,8 +48,8 @@ function navigationLink(e){return e.from?`https://www.google.com/maps/dir/?api=1
 function activityHTML(e){return `<li class="activity-item"><time>${escape(time(e))}</time><h4>${escape(e.title)}</h4>${e.status?`<span class="tag">${escape(e.status)}</span>`:''}${e.detail?`<p>${escape(e.detail)}</p>`:''}${e.cost?`<p>费用：${escape(e.cost)}</p>`:''}${e.checklist?`<ul>${e.checklist.map(x=>`<li>${escape(x)}</li>`).join('')}</ul>`:''}${e.alternativePlace?`<a href="${navigationLink({at:e.alternativePlace})}" target="_blank" rel="noopener">备选用餐地点 ↗</a>`:''}</li>`;}
 function travelHTML(v){
  const e=v.outgoing;if(!e)return '<div class="end-note">此处为当天最后一站，无后续交通安排。</div>';
- const next=model.visits[model.visits.indexOf(v)+1];
- return `<section class="departure"><div class="departure-label">前往下一站 · ${escape(transportName(e))}</div><h4>${escape(places[e.to].name)}</h4><div class="travel-times"><span>出发<strong>${e.start||'待确认'}</strong></span><span class="travel-arrow">→<small>${duration(e)}</small></span><span>到达<strong>${e.end||'待确认'}</strong></span></div>${e.estimated?'<span class="tag">分段规划估算 · 非确认班次</span>':''}${e.status?`<span class="tag">${escape(e.status)}</span>`:''}<p>${escape(e.title)}</p>${e.detail?`<p>${escape(e.detail)}</p>`:''}${v.kind==='transfer'&&v.activities.length?`<p>本站候车与准备：${v.activities.map(a=>escape(`${time(a)} ${a.title}${a.detail?'；'+a.detail:''}`)).join('；')}</p>`:''}${e.cost?`<p>费用：${escape(e.cost)}</p>`:''}<div class="links"><a href="${navigationLink(e)}" target="_blank" rel="noopener">打开交通导航 ↗</a>${next?`<button data-visit="${next.id}">查看下一站 →</button>`:''}</div></section>`;
+ const next=model.visits[model.visits.indexOf(v)+1],route=geometry(e);
+ return `<section class="departure"><div class="departure-label">前往下一站 · ${escape(transportName(e))}</div><h4>${escape(places[e.to].name)}</h4><div class="travel-times"><span>出发<strong>${e.start||'待确认'}</strong></span><span class="travel-arrow">→<small>${duration(e)}</small></span><span>到达<strong>${e.end||'待确认'}</strong></span></div>${e.estimated?'<span class="tag">分段规划估算 · 非确认班次</span>':''}${e.status?`<span class="tag">${escape(e.status)}</span>`:''}<p>${escape(e.title)}</p>${e.detail?`<p>${escape(e.detail)}</p>`:''}${v.kind==='transfer'&&v.activities.length?`<p>本站候车与准备：${v.activities.map(a=>escape(`${time(a)} ${a.title}${a.detail?'；'+a.detail:''}`)).join('；')}</p>`:''}${e.cost?`<p>费用：${escape(e.cost)}</p>`:''}<p class="route-note"><strong>${escape(route.label)}</strong><br>${escape(route.note)}${route.source?` <a href="${route.source}" target="_blank" rel="noopener">路线来源 ↗</a>`:''}</p><div class="links"><a href="${navigationLink(e)}" target="_blank" rel="noopener">打开交通导航 ↗</a>${next?`<button data-visit="${next.id}">查看下一站 →</button>`:''}</div></section>`;
 }
 function renderSelection(){
  const v=selected,p=places[v.at],same=model.points.get(v.at).visits;
@@ -75,7 +81,7 @@ $('guide-open').addEventListener('click',()=>openDialog('预约与出行准备',
   <h3>各日预算</h3><table><thead><tr><th>日期</th><th>预计美元</th></tr></thead><tbody>${days.map(d=>`<tr><td>${d.label} · ${escape(d.title)}</td><td>${d.budget?'$'+sum(d.budget):'待核算'}</td></tr>`).join('')}</tbody></table><p>已有预算六天合计 $${days.reduce((n,d)=>n+(sum(d.budget)||0),0)}，另留 $50–70 机动。7–9 日未计入，不能当成全程总价。</p>
   <h3>备选与舍弃</h3>${trip.alternatives.map(a=>`<p><b>${escape(a.name)}${a.score?` · 推荐 ${a.score}/10`:''}</b><br>${escape(a.reason)}</p>`).join('')}
   <h3>评分说明</h3><p>${escape(trip.ratingsNote)}</p>
-  <h3>核查来源</h3><p>营业、票价、班次可能变化，请在预约和出发前查看；链接不表示已订票。</p><ul>${trip.sources.map(([name,url])=>`<li><a href="${url}" target="_blank" rel="noopener">${escape(name)} ↗</a></li>`).join('')}</ul><p>数据更新：${trip.updated} · 时间：${trip.timezone}</p>`));
+  <h3>地图路线</h3><p>实线沿已取得的路网、轨道或航线数据绘制；虚线为接入段或缺少可靠轨迹的示意。路线不代表实时导航，公交班次及现场开放情况仍需确认。路线数据：© OpenStreetMap contributors / FOSSGIS、Caltrans（Hayward 市 GIS）、SFMTA、Golden Gate Transit/Ferry。</p><p><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener">修正 OpenStreetMap 地图</a> · <a href="vendor/SFMTA-LICENSE.txt" target="_blank" rel="noopener">SFMTA 数据许可与免责声明</a></p><h3>核查来源</h3><p>营业、票价、班次可能变化，请在预约和出发前查看；链接不表示已订票。</p><ul>${trip.sources.map(([name,url])=>`<li><a href="${url}" target="_blank" rel="noopener">${escape(name)} ↗</a></li>`).join('')}</ul><p>数据更新：${trip.updated} · 时间：${trip.timezone}</p>`));
 $('guide-close').addEventListener('click',()=>$('guide').close());
 $('guide').addEventListener('click',e=>{if(e.target===$('guide')){const r=$('guide').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('guide').close();}});
 $('fit').addEventListener('click',()=>{if(mobile())setPanel(panel,false);fitDay();});

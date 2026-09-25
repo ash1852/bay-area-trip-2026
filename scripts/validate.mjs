@@ -59,3 +59,23 @@ assert.ok(!finalDay.events.some(e=>[e.at,e.from,e.to].includes('lands')));
 assert.ok(finalDay.events.some(e=>e.from==='tea'&&e.to==='hotel'&&e.start==='14:00'));
 assert.ok(finalDay.events.some(e=>e.to==='oak'&&minute('18:50')-minute(e.end)>=120));
 console.log('通过：物理地点分点、重复到访、事项完整、离站交通与估算分段。');
+
+// Geometry must not silently survive a moved place or a changed transport mode.
+const {routeGeometry}=await import('../data/route-geometry.js');
+const {routePaths}=await import('../data/route-paths.js');
+for(const [key,r] of Object.entries(routePaths)){
+ assert.ok(r.source&&r.note&&r.updated,`路线缺少来源：${key}`);
+ assert.ok(r.points.length>=2,`路线为空：${key}`);
+ for(const p of [...r.points,...r.endpoints])assert.ok(p.length===2&&p.every(Number.isFinite)&&Math.abs(p[0])<=90&&Math.abs(p[1])<=180,`路线坐标错误：${key}`);
+ const [mode,from,to]=key.split(':');assert.ok(places[from]&&places[to]);
+ assert.notEqual(routeGeometry({mode,from,to},places,routePaths).kind,'schematic',`过期路线：${key}`);
+}
+const example={mode:'walk',from:'hotel',to:'bart12'};
+assert.equal(routeGeometry(example,places,{}).kind,'schematic');
+assert.equal(routeGeometry(example,{...places,hotel:{...places.hotel,lat:38}},routePaths).kind,'schematic');
+for(const d of days)for(const v of buildRoute(d,places).visits){
+ if(!v.outgoing)continue;
+ const r=routeGeometry(v.outgoing,places,routePaths),segments=r.segments;
+ for(let i=1;i<segments.length;i++)assert.deepEqual(segments[i-1].points.at(-1),segments[i].points[0]);
+}
+console.log(`通过：${Object.keys(routePaths).length} 条带来源的路线；缺失或坐标变更安全回退。`);
