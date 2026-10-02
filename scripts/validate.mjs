@@ -52,7 +52,7 @@ assert.equal(buildRoute(days[3],places).points.get('hotel').visits.filter(v=>v.a
 const bart=island.points.get('bart12').visits[0].outgoing;
 assert.equal(bart.mode,'train');assert.equal(bart.estimated,true);
 const night=days.find(d=>d.id==='2026-10-02');
-assert.ok(night.events.some(e=>e.from==='pier33'&&e.start==='17:55'&&e.status.includes('未订')));
+assert.ok(night.events.some(e=>e.from==='pier33'&&e.start==='17:55'&&e.status.includes('已出票')));
 const finalDay=days.find(d=>d.id==='2026-10-10');
 for(const at of ['deyoung','deyoungtower','tea','teahouse'])assert.ok(finalDay.events.some(e=>e.at===at));
 assert.ok(!finalDay.events.some(e=>[e.at,e.from,e.to].includes('lands')));
