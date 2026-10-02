@@ -41,6 +41,7 @@ export const places = {
   deyoung: place('de Young · 展馆入口',37.7715,-122.4686,{...sight(8.5,'高','艺术收藏、建筑与观景塔兼具；两小时适合精选常设展。'),source:'https://www.famsf.org/visit/de-young',approximate:true}),
   deyoungtower: place('de Young · Hamon 观景塔',37.7725,-122.4678,{approximate:true,note:'建筑区域定位；塔内按指示行走，不代表独立街道入口。'}),
   teahouse: place('Japanese Tea Garden · 茶屋',37.7700,-122.4704,{approximate:true,source:'https://www.japaneseteagardensf.com/tea-house',note:'园内区域近似位置；现场按指示寻找茶屋。'}),
+  gyros: place('North Beach Gyros · 旧路线缓存端点',37.8005,-122.4102,{address:'561 Columbus Avenue, San Francisco',approximate:true}),
   nortonmural: place('诺顿一世壁画 · Emperor Norton at Home',37.79455,-122.4037,{address:'652 Commercial Street, San Francisco',approximate:true,source:'https://emperornortontrust.org/arena/visual-arts/public-art'}),
   subwaybroadway: place('Subway · Broadway',37.79865,-122.4034,{address:'160 Broadway Street, San Francisco',approximate:true,source:'https://restaurants.subway.com/united-states/ca/san-francisco/160-broadway-street'}),
   subwaybay: place('Subway · Bay Street',37.80648,-122.4121,{address:'350 Bay Street, San Francisco',approximate:true,source:'https://restaurants.subway.com/united-states/ca/san-francisco/350-bay-street'}),
